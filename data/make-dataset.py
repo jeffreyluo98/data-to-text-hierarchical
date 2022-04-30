@@ -36,35 +36,39 @@ ls_keys = [f'TEAM-{key}' for key in ls_keys]
 
 def _build_home(entry):
     """The team who hosted the game"""
-    records = [DELIM.join(['<ent>', '<ent>'])]
+    records = [DELIM.join(['<ent>', '<ent>', '<ent>'])]
+    entity = entry['home_name'].replace(' ', '_')
     for key in ls_keys:
         records.append(DELIM.join([
             entry['home_line'][key].replace(' ', '_'),
-            key
+            key,
+            entity
         ]))
     
     # Contrary to previous work, IS_HOME is now a unique token at the end
-    records.append(DELIM.join(['yes', 'IS_HOME']))
+    records.append(DELIM.join(['yes', 'IS_HOME', entity]))
     
     # We pad the entity to size ENT_SIZE with OpenNMT <blank> token
-    records.extend([DELIM.join(['<blank>', '<blank>'])] * (ENT_SIZE - len(records)))
+    records.extend([DELIM.join(['<blank>', '<blank>', '<blank>'])] * (ENT_SIZE - len(records)))
     return records
 
 
 def _build_vis(entry):
     """The visiting team"""
-    records = [DELIM.join(['<ent>', '<ent>'])]
+    records = [DELIM.join(['<ent>', '<ent>', '<ent>'])]
+    entity = entry['vis_name'].replace(' ', '_')
     for key in ls_keys:
         records.append(DELIM.join([
             entry['vis_line'][key].replace(' ', '_'),
-            key
+            key,
+            entity
         ]))
     
     # Contrary to previous work, IS_HOME is now a unique token at the end
-    records.append(DELIM.join(['no', 'IS_HOME']))
+    records.append(DELIM.join(['no', 'IS_HOME', entity]))
     
     # We pad the entity to size ENT_SIZE with OpenNMT <blank> token
-    records.extend([DELIM.join(['<blank>', '<blank>'])] * (ENT_SIZE - len(records)))
+    records.extend([DELIM.join(['<blank>', '<blank>', '<blank>'])] * (ENT_SIZE - len(records)))
     return records
 
 
@@ -97,19 +101,21 @@ def box_preprocess(entry, remove_na=True):
     
     for is_home, player_idxs in enumerate([vis_players, home_players]):
         for player_idx in player_idxs:
-            player = [DELIM.join(['<ent>', '<ent>'])]
+            player = [DELIM.join(['<ent>', '<ent>', '<ent>'])]
+            entity = f"{entry['box_score']['FIRST_NAME'][player_idx]}_{entry['box_score']['SECOND_NAME'][player_idx]}".replace(' ', '_')
             for key in bs_keys:
                 val = entry['box_score'][key][player_idx]
                 if remove_na and val == 'N/A': continue
                 player.append(DELIM.join([
                     val.replace(' ', '_'),
-                    key
+                    key,
+                    entity
                 ]))
             is_home_str = 'yes' if is_home else 'no'
-            player.append(DELIM.join([is_home_str, 'IS_HOME']))
+            player.append(DELIM.join([is_home_str, 'IS_HOME', entity]))
             
             # We pad the entity to size ENT_SIZE with OpenNMT <blank> token
-            player.extend([DELIM.join(['<blank>', '<blank>'])] * (ENT_SIZE - len(player)))
+            player.extend([DELIM.join(['<blank>', '<blank>', '<blank>'])] * (ENT_SIZE - len(player)))
             all_entities.append(player)
             
     all_entities.append(_build_home(entry))
