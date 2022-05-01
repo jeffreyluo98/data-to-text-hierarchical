@@ -233,7 +233,7 @@ class HierarchicalAttention(torch.nn.Module):
         # and simply elementwise multiply.
         # It's easy to see that it remains a proba distribution (ie, sums to 1)
         # align_chunks_inflated = align_chunks.repeat_interleave(repeats=self.ent_size, dim=-1)
-        # align_vectors = align_chunks_inflated * align_units
+        align_vectors = align_units
         
         #print(align_vectors.sum())
         
