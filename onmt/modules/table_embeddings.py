@@ -24,6 +24,9 @@ class TableEmbeddings(torch.nn.Module):
                  feat_vec_exponent, # instead of feat_vec_size
                  feat_vocab_size,  # size of the pos vocabulary
                  feat_padding_idx,  # idx of <pad>
+                 ent_vec_size,  # dim of the ent embeddings
+                 ent_vocab_size,  # size of the ent vocabulary
+                 ent_padding_idx,  # idx of <pad>
                  merge="concat",  # decide to merge the pos and value
                  merge_activation='ReLU',  # used if merge is mlp
                  dropout=0,
@@ -46,12 +49,14 @@ class TableEmbeddings(torch.nn.Module):
                                    word_vec_size, padding_idx=word_padding_idx)
         self.pos_embeddings = torch.nn.Embedding(feat_vocab_size,
                                    feat_vec_size, padding_idx=feat_padding_idx)
+        self.ent_embeddings = torch.nn.Embedding(ent_vocab_size,
+                                   ent_vocab_size, padding_idx=ent_padding_idx)
         
         self._merge = merge
         if merge is None:
             self.embedding_size = self.word_vec_size
         elif merge == 'concat':
-            self.embedding_size = self.word_vec_size + self.feat_vec_size
+            self.embedding_size = self.word_vec_size + self.feat_vec_size + self.ent_vec_size
         elif merge == 'sum':
             assert self.word_vec_size == self.feat_vec_size
             self.embedding_size = self.word_vec_size
@@ -59,7 +64,8 @@ class TableEmbeddings(torch.nn.Module):
             self.embedding_size = self.word_vec_size
             val_dim = self.value_embeddings.embedding_dim
             pos_dim = self.pos_embeddings.embedding_dim
-            in_dim = val_dim + pos_dim
+            ent_dim = self.ent_embeddings.embedding_dim
+            in_dim = val_dim + pos_dim + ent_dim
             self.merge = torch.nn.Linear(in_dim, val_dim)
             
             if merge_activation is None:
@@ -88,23 +94,24 @@ class TableEmbeddings(torch.nn.Module):
     
     def forward(self, inputs):
         # unpack the inputs as cell values and pos (column name)
-        values, pos = [item.squeeze(2) for item in inputs.split(1, dim=2)]
+        values, pos, ent = [item.squeeze(2) for item in inputs.split(1, dim=2)]
         
         # embed them separatly and maybe merge them
         values = self.value_embeddings(values)
         pos = self.pos_embeddings(pos)
+        ent = self.ent_embeddings(ent)
         
         if self._merge is None:
-            return values, pos
+            return values, pos, ent
         if self._merge == 'sum':
-            values = values + pos
-            return values, pos
+            values = values + pos + ent
+            return values, pos, ent
         
-        values = torch.cat((values, pos), 2)
+        values = torch.cat((values, pos, ent), 2)
         if self._merge == 'concat':
-            return values, pos
+            return values, pos, ent
         if self._merge == 'mlp':
             values = self.merge(values)
             if self.activation:
                 values = self.activation(values)
-            return values, pos
+            return values, pos, ent

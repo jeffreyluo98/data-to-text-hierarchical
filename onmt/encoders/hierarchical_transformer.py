@@ -221,33 +221,35 @@ class HierarchicalTransformerEncoder(EncoderBase):
         self_attn_mask = torch.full((seq_len, seq_len), float('-inf')).to(src.device)
         self_attn_mask.masked_fill_(eye.to(src.device), 0)
         unit_mask = build_pad_mask(src, self.ent_size, self.embeddings.word_padding_idx).to(src.device)
-        chunk_mask = build_chunk_mask(lengths, self.ent_size).to(src.device)
+        # chunk_mask = build_chunk_mask(lengths, self.ent_size).to(src.device)
         
         # embs [seq_len, bs, hidden_size]
-        embs, pos_embs = self.embeddings(src)
+        embs, pos_embs, ent_embs = self.embeddings(src)
         _check_for_nan(embs, 'after embedding layer')
         _check_for_nan(pos_embs, 'after embedding layer')
+        _check_for_nan(ent_embs, 'after embedding layer')
         
         # units [seq_len, bs, hidden_size]
         units = self.unit_encoder(embs, mask=self_attn_mask)
 
         # chunks & units_tokens [n_units, bs, hidden_size]
-        units_tokens = units[range(0, seq_len, self.ent_size), :, :]
-        chunks = self.chunk_encoder(units_tokens, mask=chunk_mask)
+        # units_tokens = units[range(0, seq_len, self.ent_size), :, :]
+        # chunks = self.chunk_encoder(units_tokens, mask=chunk_mask)
         
         # memory bank every thing we want to pass to the decoder
         # all tensors should have dim(1) be the batch size
         memory_bank = (
-            chunks, 
+            # chunks, 
             units,
             pos_embs,
             unit_mask.transpose(0, 1),
-            chunk_mask[:, 0, :].unsqueeze(0).eq(float('-inf'))
+            # chunk_mask[:, 0, :].unsqueeze(0).eq(float('-inf'))
         )
         
         # We average the units representation to give a final encoding
         # and be inline with the onmt framework
-        encoder_final = chunks.mean(dim=0).unsqueeze(0)
+        # encoder_final = chunks.mean(dim=0).unsqueeze(0)
+        encoder_final = units.mean(dim=0).unsqueeze(0)
 #        encoder_final = (encoder_final, encoder_final)
         
         return encoder_final, memory_bank, lengths

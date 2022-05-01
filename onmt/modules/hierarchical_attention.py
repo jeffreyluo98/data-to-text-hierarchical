@@ -169,12 +169,13 @@ class HierarchicalAttention(torch.nn.Module):
         # Unpacking memory_bank (we reassign memory_bank to optimize memory
         # and minimize errors when copy/paste exisiting code)
         # we transpose the batch_dim for the scoring compute
-        chunks, memory_bank, pos_embs, units_mask, chunk_mask = memory_bank  
-        chunks = chunks.transpose(0, 1)
+        # chunks, memory_bank, pos_embs, units_mask, chunk_mask = memory_bank  
+        memory_bank, pos_embs, units_mask = memory_bank  
+        # chunks = chunks.transpose(0, 1)
         memory_bank = memory_bank.transpose(0, 1)
         pos_embs = pos_embs.transpose(0, 1)
         units_mask = units_mask.transpose(0, 1)
-        chunk_mask = chunk_mask.transpose(0, 1)
+        # chunk_mask = chunk_mask.transpose(0, 1)
         
 #         _check_for_nan(chunks)
 #         _check_for_nan(memory_bank)
@@ -195,7 +196,7 @@ class HierarchicalAttention(torch.nn.Module):
         else:
             align_units = self.unit_scorer(source, memory_bank).squeeze(1)
             
-        align_chunks = self.chunk_scorer(source, chunks)
+        # align_chunks = self.chunk_scorer(source, chunks)
         
         # we compute the softmax first on the unit level
         #   - we reshape so that each row is an entity
@@ -222,23 +223,24 @@ class HierarchicalAttention(torch.nn.Module):
         align_units = align_units.view(batch_size, 1, -1)
         
         # Now the second level of attention, on the <ent> tokens
-        align_chunks.masked_fill_(chunk_mask, float('-inf'))
-        align_chunks = self.attn_func(align_chunks, -1)
+        # align_chunks.masked_fill_(chunk_mask, float('-inf'))
+        # align_chunks = self.attn_func(align_chunks, -1)
 #         align_chunks = sparsemax(align_chunks, -1)
-        _check_for_nan(align_chunks, 'align_chunks after attn_func')
+        # _check_for_nan(align_chunks, 'align_chunks after attn_func')
 
         # To compute the final scores, we weight the unit scores by the chunk
         # score from the chunk to witch they belong. We inflate the chunk scores
         # and simply elementwise multiply.
         # It's easy to see that it remains a proba distribution (ie, sums to 1)
-        align_chunks_inflated = align_chunks.repeat_interleave(repeats=self.ent_size, dim=-1)
-        align_vectors = align_chunks_inflated * align_units
+        # align_chunks_inflated = align_chunks.repeat_interleave(repeats=self.ent_size, dim=-1)
+        # align_vectors = align_chunks_inflated * align_units
         
         #print(align_vectors.sum())
         
         # each context vector c_t is the weighted average
         # over all the source hidden states
-        c = torch.bmm(align_vectors, memory_bank)
+        # c = torch.bmm(align_vectors, memory_bank)
+        c = torch.bmm(align_units, memory_bank)
 
         # concatenate
         concat_c = torch.cat([c, source], 2).view(batch_size*target_l, dim*2)
@@ -260,7 +262,7 @@ class HierarchicalAttention(torch.nn.Module):
     
         ret = {
             '': align_vectors,
-            '_align_chunks': align_chunks.squeeze(1),
+            # '_align_chunks': align_chunks.squeeze(1),
             '_align_units':align_units.squeeze(1)
         }
 
