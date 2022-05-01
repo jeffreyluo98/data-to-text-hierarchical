@@ -25,6 +25,7 @@ class TableEmbeddings(torch.nn.Module):
                  feat_vocab_size,  # size of the pos vocabulary
                  feat_padding_idx,  # idx of <pad>
                  ent_vec_size,  # dim of the ent embeddings
+                 ent_vec_exponent, # instead of ent_vec_size
                  ent_vocab_size,  # size of the ent vocabulary
                  ent_padding_idx,  # idx of <pad>
                  merge="concat",  # decide to merge the pos and value
@@ -44,13 +45,18 @@ class TableEmbeddings(torch.nn.Module):
             if not 0 < feat_vec_exponent <= 1:
                 raise ValueError('feat_vec_exponent should be between 0 and 1')
             feat_vec_size = int(feat_vocab_size ** feat_vec_exponent)
+
+        if ent_vec_size < 0:
+            if not 0 < ent_vec_exponent <= 1:
+                raise ValueError('ent_vec_exponent should be between 0 and 1')
+            ent_vec_size = int(ent_vocab_size ** ent_vec_exponent)
         
         self.value_embeddings = torch.nn.Embedding(word_vocab_size,
                                    word_vec_size, padding_idx=word_padding_idx)
         self.pos_embeddings = torch.nn.Embedding(feat_vocab_size,
                                    feat_vec_size, padding_idx=feat_padding_idx)
         self.ent_embeddings = torch.nn.Embedding(ent_vocab_size,
-                                   ent_vocab_size, padding_idx=ent_padding_idx)
+                                   ent_vec_size, padding_idx=ent_padding_idx)
         
         self._merge = merge
         if merge is None:

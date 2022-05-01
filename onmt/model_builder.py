@@ -40,6 +40,11 @@ def build_embeddings(opt, text_field, for_encoder=True):
         feat_padding_idx = field.vocab.stoi[field.pad_token]
         feat_vocab_size = len(field.vocab)
 
+        # ent field
+        field = text_field[2][1]
+        ent_padding_idx = field.vocab.stoi[field.pad_token]
+        ent_vocab_size = len(field.vocab)
+
         ent_idx = text_field.base_field.vocab.stoi['<ent>']
 
         return TableEmbeddings(
@@ -50,9 +55,10 @@ def build_embeddings(opt, text_field, for_encoder=True):
             feat_vec_size=opt.feat_vec_size,
             feat_vocab_size=feat_vocab_size,
             feat_padding_idx=feat_padding_idx,
+            ent_vec_exponent=opt.ent_vec_exponent,
             ent_vec_size=opt.ent_vec_size,
-            ent_vocab_size=onmt.ENT_SIZE,
-            ent_padding_idx=feat_padding_idx,
+            ent_vocab_size=ent_vocab_size,
+            ent_padding_idx=ent_padding_idx,
             merge=opt.feat_merge,
             merge_activation=opt.feat_merge_activation,
             dropout=opt.dropout[0] if type(opt.dropout) is list else opt.dropout,

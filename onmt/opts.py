@@ -61,6 +61,11 @@ def model_opts(parser):
     group.add('--ent_vec_size', '-ent_vec_size', type=int, default=-1,
               help="If specified, entity embedding sizes "
                    "will be set to this.")
+    group.add('--ent_vec_exponent', '-ent_vec_exponent',
+              type=float, default=0.7,
+              help="If -ent_merge_size is not set, entity "
+                   "embedding sizes will be set to N^ent_vec_exponent "
+                   "where N is the number of values the entity takes.")
 
     # Encoder-Decoder Options
     group = parser.add_argument_group('Model- Encoder-Decoder')
